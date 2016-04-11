@@ -1,0 +1,12 @@
+*window
+Ctrl-s c tao cua so window
+Ctrl-s f tim kiem window
+Ctrl-s n/p di chuyen den cac window
+Ctrl-s w hien thi cac window
+Ctrl-s & dong window
+
+*panel
+Ctrl-s % chia doi man hinh theo chieu doc
+Ctrl-s " chia doi man hinh theo chieu ngang
+Ctrl-s n di chuyen den cac panel
+Ctrl-s x kill panel
