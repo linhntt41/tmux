@@ -1,0 +1,77 @@
+Details of steps I took on each node in a nine node ES cluster on RHEL7. These steps need to occur one node at a time, i.e. "rolling upgrade")
+
+Step 1: Disable shard allocation
+
+curl -XPUT "http://localhost:9200/_cluster/settings" -d'
+{
+  "transient": {
+    "cluster.routing.allocation.enable": "none"
+  }
+}'
+Step 2: Stop non-essential indexing and perform a synced flush (Optional)
+
+curl -XPOST "http://localhost:9200/_flush/synced"
+Step 3: Stop and upgrade a single node
+
+# stop elasticsearch and kibana
+sudo service elasticsearch stop
+sudo service kibana stop
+
+cd /usr/share/elasticsearch/
+
+# remove plugins
+sudo bin/plugin remove license
+sudo bin/plugin remove kopf
+sudo bin/plugin remove marvel-agent
+
+# download RPM
+cd ~/
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/rpm/elasticsearch/2.3.0/elasticsearch-2.3.0.rpm
+
+# upgrade using RPM
+rpm -U elasticsearch-2.3.0.rpm
+
+# install plguins
+cd /usr/share/elasticsearch/
+sudo bin/plugin install license
+sudo bin/plugin install marvel-agent
+
+# reload and restart elasticsearch and kibana
+sudo systemctl daemon-reload
+sudo service elasticsearch start
+sudo service kibana start
+Step 4: Start the upgraded node
+
+Confirm that started node joins the cluster
+
+curl -XGET "http://localhost:9200/_cat/nodes"
+Step 5: Re-enable shard allocation
+
+Once the node has joined the cluster, reenable shard allocation to start using the node
+
+curl -XPUT "http://localhost:9200/_cluster/settings" -d'
+{
+  "transient": {
+    "cluster.routing.allocation.enable": "all"
+  }
+}'
+Step 6: Wait for the node to recover
+
+curl -XGET "http://localhost:9200/_cat/health"
+Updating Kibana to 4.5
+
+sudo -s
+service kibana stop
+cp /opt/kibana/config/kibana.yml /home/myuser
+cd /home/myuser
+wget https://download.elastic.co/kibana/kibana/kibana-4.5.0-linux-x64.tar.gz
+tar xzvf kibana-4.5.0-linux-x64.tar.gz
+cd kibana-4.5.0-linux-x64
+yes | cp -R * /opt/kibana/
+yes | cp -R /home/myuser/kibana.yml /opt/kibana/config/kibana.yml
+cd /opt/kibana/
+chown -R kibana:kibana *
+service kibana start
+
+
+https://gist.github.com/tegansnyder/885614297b6369e987f5d45248630fca
